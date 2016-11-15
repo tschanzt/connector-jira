@@ -61,7 +61,7 @@ class JiraBackend(models.Model):
 
         Can be inherited to add custom versions.
         """
-        return [('7.2.2', '7.2.2'),
+        return [('7.2.0', '7.2.0+'),
                 ]
 
     @api.model

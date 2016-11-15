@@ -4,8 +4,8 @@
 
 from openerp.addons.connector.backend import Backend
 
-jira = Backend('qoqa')
+jira = Backend('jira')
 """ Generic QoQa Backend. """
 
-jira_7_2_2 = Backend(parent=jira, version='7.2.2')
-""" Backend for version 7.2.2 of Jira """
+jira_7_2_0 = Backend(parent=jira, version='7.2.0')
+""" Backend for version 7.2.0 of Jira """
