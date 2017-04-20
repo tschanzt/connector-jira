@@ -18,15 +18,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jira import JIRA, JIRAError
 from jira.utils import json_loads
 
-import openerp
-from openerp import models, fields, api, exceptions, _
+import odoo
+from odoo import models, fields, api, exceptions, _
 
-from openerp.addons.connector.connector import ConnectorEnvironment
-from openerp.addons.connector.session import ConnectorSession
+from odoo.addons.connector.connector import ConnectorEnvironment
 
-from ...unit.importer import import_batch
 from ...unit.backend_adapter import JiraAdapter
-from ..jira_issue_type.importer import import_batch_issue_type
 from ...backend import jira
 
 _logger = logging.getLogger(__name__)
@@ -37,7 +34,7 @@ IMPORT_DELTA = 70  # seconds
 @contextmanager
 def new_env(env):
     with api.Environment.manage():
-        registry = openerp.modules.registry.RegistryManager.get(env.cr.dbname)
+        registry = odoo.modules.registry.RegistryManager.get(env.cr.dbname)
         with closing(registry.cursor()) as cr:
             new_env = api.Environment(cr, env.uid, env.context)
             try:
@@ -230,7 +227,6 @@ class JiraBackend(models.Model):
     def _inverse_import_analytic_line_from_date(self):
         self._inverse_date_fields('import_analytic_line_from_date')
 
-
     @api.multi
     def _lock_timestamp(self, from_date_field):
         """ Update the timestamp for a synchro
@@ -292,7 +288,6 @@ class JiraBackend(models.Model):
         """
         self.ensure_one()
         with self.env.cr.savepoint():
-            session = ConnectorSession.from_env(self.env)
             import_start_time = datetime.now()
             try:
                 self._lock_timestamp(from_date_field)
@@ -308,10 +303,9 @@ class JiraBackend(models.Model):
                 from_date = fields.Datetime.from_string(from_date)
             else:
                 from_date = None
-            import_batch.delay(session, model, self.id,
-                               from_date=from_date,
-                               to_date=import_start_time,
-                               priority=9)
+            self.env[model].with_delay(priority=9).import_batch(
+                self, from_date=from_date, to_date=import_start_time
+            )
 
             # Reimport next records a small delta before the last import date
             # in case of small lag between servers or transaction committed
@@ -513,17 +507,14 @@ class JiraBackend(models.Model):
 
     @api.multi
     def import_issue_type(self):
-        session = ConnectorSession.from_env(self.env)
-        import_batch_issue_type(session, 'jira.issue.type', self.id)
+        self.env['jira.issue.type'].import_batch(self)
         return True
 
     @contextmanager
     @api.multi
-    def get_environment(self, model_name, session=None):
+    def get_environment(self, model_name):
         self.ensure_one()
-        if not session:
-            session = ConnectorSession.from_env(self.env)
-        yield ConnectorEnvironment(self, session, model_name)
+        yield ConnectorEnvironment(self, model_name)
 
     @api.model
     def get_api_client(self):
