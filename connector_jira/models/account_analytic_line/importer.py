@@ -63,9 +63,9 @@ class AnalyticLineMapper(Component):
             # on the project without any task
             return {'account_id': project.analytic_account_id.id}
 
-        analytic = task_binding.project_id.analytic_account_id
+        project = task_binding.project_id
         return {'task_id': task_binding.odoo_id.id,
-                'account_id': analytic.id}
+                'project_id': project.id}
 
     @mapping
     def backend_id(self, record):
