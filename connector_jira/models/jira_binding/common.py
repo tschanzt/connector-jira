@@ -59,6 +59,6 @@ class JiraBinding(models.AbstractModel):
     @api.multi
     def export_record(self, fields=None):
         self.ensure_one()
-        with self.work_on(self._name) as work:
+        with self.backend_id.work_on(self._name) as work:
             exporter = work.component(usage='record.exporter')
             exporter.run(self, fields=fields)

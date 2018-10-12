@@ -192,8 +192,10 @@ class AnalyticLineImporter(Component):
 
     def _get_external_data(self):
         """ Return the raw Jira data for ``self.external_id`` """
-        issue_adapter = self.component(usage='backend.adapter',
-                                       model='jira.project.task')
+        issue_adapter = self.component(
+            usage='backend.adapter',
+            model_name='jira.project.task'
+        )
         self.external_issue = issue_adapter.read(self.external_issue_id)
         return self.backend_adapter.read(self.external_issue_id,
                                          self.external_id)
