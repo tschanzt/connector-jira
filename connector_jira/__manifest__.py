@@ -16,9 +16,11 @@
          'requests',
          'jira',
          'oauthlib',
-         'requests-oauthlib',
-         'requests-toolbelt',
-         'PyJWT',
+         # these are dependencies but as they don't have the same name of
+         # package / module, we can't list them here
+         # 'requests-oauthlib',
+         # 'requests-toolbelt',
+         # 'PyJWT',
          'cryptography',
       ],
  },
