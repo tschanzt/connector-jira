@@ -136,6 +136,7 @@ class JiraBackend(models.Model):
 
     epic_link_field_name = fields.Char(
         string='Epic Link Field',
+        default='customfield_10001',
         help="The 'Epic Link' field on JIRA is a custom field. "
              "The name of the field is something like 'customfield_10002'. "
     )
