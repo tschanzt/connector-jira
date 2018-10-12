@@ -31,7 +31,7 @@ IMPORT_DELTA = 70  # seconds
 @contextmanager
 def new_env(env):
     with api.Environment.manage():
-        registry = odoo.modules.registry.RegistryManager.get(env.cr.dbname)
+        registry = odoo.registry(env.cr.dbname)
         with closing(registry.cursor()) as cr:
             new_env = api.Environment(cr, env.uid, env.context)
             try:

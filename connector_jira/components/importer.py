@@ -220,9 +220,7 @@ class JiraImporter(Component):
         for instance to see if another transaction already made the work.
         """
         with odoo.api.Environment.manage():
-            registry = odoo.modules.registry.RegistryManager.get(
-                self.env.cr.dbname
-            )
+            registry = odoo.registry(self.env.cr.dbname)
             with closing(registry.cursor()) as cr:
                 try:
                     new_env = odoo.api.Environment(cr, self.env.uid,
