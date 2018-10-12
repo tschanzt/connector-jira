@@ -2,6 +2,7 @@
 # Copyright 2016 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import binascii
 import logging
 import json
 import urllib.parse
@@ -55,8 +56,8 @@ class JiraBackend(models.Model):
         return self.env['res.company']._company_default_get('jira.backend')
 
     def _default_consumer_key(self):
-        ''' Generate a rnd consumer key of length self.KEY_LEN '''
-        return urandom(self.KEY_LEN).encode('hex')[:self.KEY_LEN]
+        """Generate a rnd consumer key of length self.KEY_LEN"""
+        return binascii.hexlify(urandom(self.KEY_LEN))[:self.KEY_LEN]
 
     uri = fields.Char(string='Jira URI')
     name = fields.Char()
