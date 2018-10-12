@@ -23,7 +23,7 @@ class JiraBinder(Component):
     """
 
     _name = 'jira.binder'
-    _inherit = 'base.binder'
+    _inherit = ['base.binder', 'jira.base']
 
     def sync_date(self, binding):
         assert self._sync_date_field
@@ -42,7 +42,7 @@ class JiraModelBinder(Component):
 
     """
     _name = 'jira.model.binder'
-    _inherit = 'base.binder'
+    _inherit = ['base.binder', 'jira.base']
 
     _apply_on = [
         'jira.issue.type',
