@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright: 2015 LasLabs, Inc.
 # Copyright 2016 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import binascii
 import logging
 import json
-import urlparse
+import urllib.parse
 
 from contextlib import contextmanager, closing
 from datetime import datetime, timedelta
@@ -21,10 +21,7 @@ from jira.utils import json_loads
 import odoo
 from odoo import models, fields, api, exceptions, _
 
-from odoo.addons.connector.connector import ConnectorEnvironment
-
-from ...unit.backend_adapter import JiraAdapter
-from ...backend import jira
+from odoo.addons.component.core import Component
 
 _logger = logging.getLogger(__name__)
 
@@ -34,12 +31,12 @@ IMPORT_DELTA = 70  # seconds
 @contextmanager
 def new_env(env):
     with api.Environment.manage():
-        registry = odoo.modules.registry.RegistryManager.get(env.cr.dbname)
+        registry = odoo.registry(env.cr.dbname)
         with closing(registry.cursor()) as cr:
             new_env = api.Environment(cr, env.uid, env.context)
             try:
                 yield new_env
-            except:
+            except Exception:
                 cr.rollback()
                 raise
             else:
@@ -50,7 +47,6 @@ class JiraBackend(models.Model):
     _name = 'jira.backend'
     _description = 'Jira Backend'
     _inherit = 'connector.backend'
-    _backend_type = 'jira'
 
     RSA_BITS = 4096
     RSA_PUBLIC_EXPONENT = 65537
@@ -60,14 +56,9 @@ class JiraBackend(models.Model):
         return self.env['res.company']._company_default_get('jira.backend')
 
     def _default_consumer_key(self):
-        ''' Generate a rnd consumer key of length self.KEY_LEN '''
-        return urandom(self.KEY_LEN).encode('hex')[:self.KEY_LEN]
+        """Generate a rnd consumer key of length self.KEY_LEN"""
+        return binascii.hexlify(urandom(self.KEY_LEN))[:self.KEY_LEN]
 
-    version = fields.Selection(
-        selection='_select_versions',
-        string='Jira Version',
-        required=True,
-    )
     uri = fields.Char(string='Jira URI')
     name = fields.Char()
     company_id = fields.Many2one(
@@ -77,11 +68,11 @@ class JiraBackend(models.Model):
         default=lambda self: self._default_company(),
     )
     state = fields.Selection(
-        selection=[('authentify', 'Authentify'),
+        selection=[('authenticate', 'Authenticate'),
                    ('setup', 'Setup'),
                    ('running', 'Running'),
                    ],
-        default='authentify',
+        default='authenticate',
         required=True,
         readonly=True,
     )
@@ -174,15 +165,6 @@ class JiraBackend(models.Model):
                 ('Task management', 'Task management (Business)'),
                 ('Process management', 'Process management (Business)'),
                 ('shared', 'From a shared template'),
-                ]
-
-    @api.model
-    def _select_versions(self):
-        """ Available versions
-
-        Can be inherited to add custom versions.
-        """
-        return [('7.2.0', '7.2.0+'),
                 ]
 
     @api.constrains('project_template_shared')
@@ -327,7 +309,7 @@ class JiraBackend(models.Model):
 
     @api.model
     def create(self, values):
-        record = super(JiraBackend, self).create(values)
+        record = super().create(values)
         record.create_rsa_key_vals()
         return record
 
@@ -361,19 +343,19 @@ class JiraBackend(models.Model):
     @api.multi
     def activate_epic_link(self):
         self.ensure_one()
-        with self.get_environment('jira.backend') as connector_env:
-            adapter = connector_env.get_connector_unit(JiraAdapter)
+        with self.work_on('jira.backend') as work:
+            adapter = work.component(usage='backend.adapter')
             jira_fields = adapter.list_fields()
             for field in jira_fields:
                 custom_ref = field.get('schema', {}).get('custom')
-                if custom_ref == u'com.pyxis.greenhopper.jira:gh-epic-link':
+                if custom_ref == 'com.pyxis.greenhopper.jira:gh-epic-link':
                     self.epic_link_field_name = field['id']
                     break
 
     @api.multi
     def state_setup(self):
         for backend in self:
-            if backend.state == 'authentify':
+            if backend.state == 'authenticate':
                 backend.state = 'setup'
 
     @api.multi
@@ -405,15 +387,16 @@ class JiraBackend(models.Model):
                 raise exceptions.UserError(
                     _('The Odoo Webhook base URL must be set.')
                 )
-            with backend.get_environment(self._name) as connector_env:
+
+            with self.work_on('jira.backend') as work:
                 backend.use_webhooks = True
 
-                adapter = connector_env.get_connector_unit(JiraAdapter)
+                adapter = work.component(usage='backend.adapter')
                 # TODO: we could update the JQL of the webhook
                 # each time a new project is sync'ed, so we would
                 # filter out the useless events
-                url = urlparse.urljoin(base_url,
-                                       '/connector_jira/webhooks/issue')
+                url = urllib.parse.urljoin(base_url,
+                                           '/connector_jira/webhooks/issue')
                 webhook = adapter.create_webhook(
                     name='Odoo Issues',
                     url=url,
@@ -429,8 +412,8 @@ class JiraBackend(models.Model):
                 backend.webhook_issue_jira_id = webhook_id
                 env.cr.commit()
 
-                url = urlparse.urljoin(base_url,
-                                       '/connector_jira/webhooks/worklog')
+                url = urllib.parse.urljoin(base_url,
+                                           '/connector_jira/webhooks/worklog')
                 webhook = adapter.create_webhook(
                     name='Odoo Worklogs',
                     url=url,
@@ -453,8 +436,8 @@ class JiraBackend(models.Model):
     @api.multi
     def delete_webhooks(self):
         self.ensure_one()
-        with self.get_environment('jira.backend') as connector_env:
-            adapter = connector_env.get_connector_unit(JiraAdapter)
+        with self.work_on('jira.backend') as work:
+            adapter = work.component(usage='backend.adapter')
             if self.webhook_issue_jira_id:
                 try:
                     adapter.delete_webhook(self.webhook_issue_jira_id)
@@ -510,12 +493,6 @@ class JiraBackend(models.Model):
         self.env['jira.issue.type'].import_batch(self)
         return True
 
-    @contextmanager
-    @api.multi
-    def get_environment(self, model_name):
-        self.ensure_one()
-        yield ConnectorEnvironment(self, model_name)
-
     @api.model
     def get_api_client(self):
         oauth = {
@@ -562,9 +539,10 @@ class JiraBackendTimestamp(models.Model):
     )
 
 
-@jira
-class BackendAdapter(JiraAdapter):
-    _model_name = 'jira.backend'
+class BackendAdapter(Component):
+    _name = 'jira.backend.adapter'
+    _inherit = 'jira.webservice.adapter'
+    _apply_on = ['jira.backend']
 
     webhook_base_path = '{server}/rest/webhooks/1.0/{path}'
 
