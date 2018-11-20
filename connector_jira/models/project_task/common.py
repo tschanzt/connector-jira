@@ -81,7 +81,7 @@ class ProjectTask(models.Model):
         store=True,
     )
     jira_issue_url = fields.Char(
-        string='JIRA URL',
+        string='JIRA issue',
         compute='_compute_jira_issue_url',
     )
 

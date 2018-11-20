@@ -15,7 +15,8 @@
       </xpath>
 
       <field name="legend_done" position="after">
-        <field name="jira_compound_key"
+        <field name="jira_compound_key" invisible="1" />
+        <field name="jira_issue_url" widget="url" text_field="jira_compound_key"
           attrs="{'invisible': [('jira_bind_ids', '=', [])]}"/>
         <field name="jira_issue_type"
           attrs="{'invisible': [('jira_bind_ids', '=', [])]}"/>
@@ -23,8 +24,6 @@
           attrs="{'invisible': [('jira_epic_link_task_id', '=', False)]}"/>
         <field name="jira_parent_task_id"
           attrs="{'invisible': [('jira_parent_task_id', '=', False)]}"/>
-        <field name="jira_issue_url" widget="url" text_field="jira_compound_key"
-          attrs="{'invisible': [('jira_bind_ids', '=', [])]}"/>
       </field>
     </field>
   </record>
