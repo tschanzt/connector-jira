@@ -73,16 +73,24 @@ class ResUsers(models.Model):
                         })
                         continue
                     jira_user = jira_user[0]
-                    binding = self.env['jira.res.users'].create({
-                        'backend_id': backend.id,
-                        'odoo_id': user.id,
-                    })
-                    binder.bind(jira_user.key, binding)
-                    bknd_result['success'].append({
-                        'key': 'login',
-                        'value': user.login,
-                        'detail': jira_user.key,
-                    })
+                    try:
+                        binding = self.env['jira.res.users'].create({
+                            'backend_id': backend.id,
+                            'odoo_id': user.id,
+                        })
+                        binder.bind(jira_user.key, binding)
+                        bknd_result['success'].append({
+                            'key': 'login',
+                            'value': user.login,
+                            'detail': jira_user.key,
+                        })
+                    except Exception as err:
+                        bknd_result['error'].append({
+                            'key': 'login',
+                            'value': user.login,
+                            'error': 'binding_error',
+                            'detail': str(err)
+                        })
             result[backend] = bknd_result
         return result
 
