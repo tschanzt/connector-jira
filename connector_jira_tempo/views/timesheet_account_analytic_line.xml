@@ -8,9 +8,7 @@
     <field name="arch" type="xml">
 
       <field name="task_id" position="after">
-        <field name="jira_compound_key" invisible="1" />
-        <field name="jira_issue_url" widget="url" text_field="jira_compound_key"
-               attrs="{'invisible': [('jira_compound_key', '=', False)]}"/>
+        <field name="jira_tempo_status" />
       </field>
 
     </field>
@@ -23,10 +21,12 @@
     <field name="arch" type="xml">
 
       <field name="task_id" position="after">
-        <field name="jira_compound_key" invisible="1" />
-        <field name="jira_issue_url" widget="url" options='{"text_field":"jira_compound_key"}'
-               attrs="{'invisible': [('jira_compound_key', '=', False)]}"/>
+        <field name="jira_tempo_status" />
       </field>
+
+      <tree position="attributes">
+        <attribute name="decoration-danger">jira_tempo_status=='open'</attribute>
+      </tree>
 
     </field>
   </record>
@@ -39,10 +39,10 @@
       <field name="arch" type="xml">
 
         <field name="task_id" position="after">
-          <field name="jira_compound_key" string="JIRA issue" />
+          <field name="jira_tempo_status" />
         </field>
         <filter name="groupby_date" position="after">
-          <filter string="JIRA issue" name="groupby_jira_task" domain="[]" context="{'group_by':'jira_compound_key'}"/>
+          <field name="jira_tempo_status" />
         </filter>
 
     </field>
